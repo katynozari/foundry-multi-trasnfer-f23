@@ -4,11 +4,13 @@ pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract MultiTransferV1 is Pausable, Ownable {
     using SafeMath for uint256;
+    using SafeERC20 for IERC20;
 
     error NoAddressesSpecified();
     error NoAmountsSpecified();
@@ -33,7 +35,7 @@ contract MultiTransferV1 is Pausable, Ownable {
     function multiTransferETH(
         address payable[] calldata _addresses,
         uint256[] calldata _amounts
-    ) external payable whenNotPaused {
+    ) external payable whenNotPaused returns (bool) {
         if (_addresses.length <= 0) {
             revert NoAddressesSpecified();
         }
@@ -51,6 +53,7 @@ contract MultiTransferV1 is Pausable, Ownable {
             value -= _amounts[i];
             _addresses[i].transfer(_amounts[i]);
         }
+        return true;
         // emit Multisended(msg.value, 0x000000000000000000000000000000000000bEEF);
     }
 
@@ -74,13 +77,13 @@ contract MultiTransferV1 is Pausable, Ownable {
         if (token.allowance(msg.sender, address(this)) < _amountSum) {
             revert InsufficientTokenAllowance();
         }
-        token.transferFrom(msg.sender, address(this), _amountSum);
+        token.safeTransferFrom(msg.sender, address(this), _amountSum);
         for (uint256 i = 0; i < _addresses.length; i++) {
             if (_amountSum < _amounts[i]) {
                 revert InsufficientTokenAmount();
             }
             _amountSum -= _amounts[i];
-            token.transfer(_addresses[i], _amounts[i]);
+            token.safeTransfer(_addresses[i], _amounts[i]);
         }
         // emit Multisended(_amountSum, address(token));
     }
@@ -114,12 +117,12 @@ contract MultiTransferV1 is Pausable, Ownable {
         uint256 _value = msg.value;
         IERC20 token = IERC20(_token);
 
-        token.transferFrom(msg.sender, address(this), _amountSum);
+        token.safeTransferFrom(msg.sender, address(this), _amountSum);
         for (uint256 i = 0; i < _addresses.length; i++) {
             _amountSum -= _amounts[i];
             _value -= _amountsEther[i];
 
-            token.transfer(_addresses[i], _amounts[i]);
+            token.safeTransfer(_addresses[i], _amounts[i]);
             _addresses[i].transfer(_amountsEther[i]);
         }
         // emit MultisendTokenAndEther(

@@ -5,14 +5,14 @@ pragma solidity 0.8.19;
 import {Test, console} from "forge-std/Test.sol";
 import {MultiTransferV1} from "../../src/MultiTransferV1.sol";
 import {DeployMultiTransferV1} from "../../script/DeployMultiTransferV1.s.sol";
-import {MockERC20} from "../mocks/MockERC20.sol";
+import {MockToken} from "../mocks/MockToken.sol";
 
-contract MultiTransferTestV1 is Test {
+contract MultiTransferV1Test is Test {
     MultiTransferV1 multiTransfer;
-    address USER = makeAddr("user");
-    address FIRST_RECIEPIENT = makeAddr("firstRecipient");
-    address SECOND_RECIPIENT = makeAddr("secondRecipient");
-    MockERC20 token;
+    address immutable USER = makeAddr("user");
+    address immutable FIRST_RECIEPIENT = makeAddr("firstRecipient");
+    address immutable SECOND_RECIPIENT = makeAddr("secondRecipient");
+    MockToken token;
 
     uint256 constant STARTING_BALANCE = 20 ether;
     uint256 constant FIRST_SEND_VALUE = 0.01 ether;
@@ -22,7 +22,7 @@ contract MultiTransferTestV1 is Test {
         DeployMultiTransferV1 deployMultiTransferV1 = new DeployMultiTransferV1();
         multiTransfer = deployMultiTransferV1.run();
         vm.deal(USER, STARTING_BALANCE);
-        token = new MockERC20("Life", "LFT", 300000e18);
+        token = new MockToken("Life", "LFT", 300000e18);
         deal(address(token), USER, 200000);
     }
 
