@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract MultiTransfer is Pausable, Ownable {
+contract MultiTransferV1 is Pausable, Ownable {
     using SafeMath for uint256;
 
     error NoAddressesSpecified();
@@ -83,38 +83,6 @@ contract MultiTransfer is Pausable, Ownable {
             token.transfer(_addresses[i], _amounts[i]);
         }
         // emit Multisended(_amountSum, address(token));
-    }
-
-    function multiTransferMultiToken(
-        address[] calldata _tokenAddresses,
-        address[] calldata _addresses,
-        uint256[] calldata _amounts,
-        uint256 _amountSum
-    ) external whenNotPaused {
-        if (_addresses.length <= 0) {
-            revert NoAddressesSpecified();
-        }
-        if (_amounts.length <= 0) {
-            revert NoAmountsSpecified();
-        }
-        if (_addresses.length != _amounts.length) {
-            revert ArrayLengthMismatch();
-        }
-
-        for (uint256 i = 0; i < _tokenAddresses.length; i++) {
-            IERC20 token = IERC20(_tokenAddresses[i]);
-            if (token.allowance(msg.sender, address(this)) < _amountSum) {
-                revert InsufficientTokenAllowance();
-            }
-            token.transferFrom(msg.sender, address(this), _amountSum);
-            for (uint256 j = 0; j < _addresses.length; j++) {
-                if (_amountSum < _amounts[i]) {
-                    revert InsufficientTokenAmount();
-                }
-                _amountSum -= _amounts[j];
-                token.transfer(_addresses[j], _amounts[j]);
-            }
-        }
     }
 
     function multiTransferTokenEther(

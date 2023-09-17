@@ -3,12 +3,12 @@
 pragma solidity 0.8.19;
 
 import {Test, console} from "forge-std/Test.sol";
-import {MultiTransfer} from "../../src/MultiTransfer.sol";
-import {DeployMultiTransfer} from "../../script/DeployMultiTransfer.s.sol";
+import {MultiTransferV1} from "../../src/MultiTransferV1.sol";
+import {DeployMultiTransferV1} from "../../script/DeployMultiTransferV1.s.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 
-contract MultiTransferTest is Test {
-    MultiTransfer multiTransfer;
+contract MultiTransferTestV1 is Test {
+    MultiTransferV1 multiTransfer;
     address USER = makeAddr("user");
     address FIRST_RECIEPIENT = makeAddr("firstRecipient");
     address SECOND_RECIPIENT = makeAddr("secondRecipient");
@@ -19,11 +19,11 @@ contract MultiTransferTest is Test {
     uint256 constant SECOND_SEND_VALUE = 0.02 ether;
 
     function setUp() external {
-        DeployMultiTransfer deployMultiTransfer = new DeployMultiTransfer();
-        multiTransfer = deployMultiTransfer.run();
+        DeployMultiTransferV1 deployMultiTransferV1 = new DeployMultiTransferV1();
+        multiTransfer = deployMultiTransferV1.run();
         vm.deal(USER, STARTING_BALANCE);
-        token = new MockERC20("Life", "LFT", 200e18);
-        deal(address(token), USER, 2000);
+        token = new MockERC20("Life", "LFT", 300000e18);
+        deal(address(token), USER, 200000);
     }
 
     function testOwnerIsMsgSender() public {
@@ -219,6 +219,7 @@ contract MultiTransferTest is Test {
         amounts[0] = 5000;
         amounts[1] = 6000;
 
+        vm.startPrank(USER);
         vm.expectRevert(); // Expect a revert
         multiTransfer.multiTransferToken(
             address(token),
@@ -226,6 +227,34 @@ contract MultiTransferTest is Test {
             amounts,
             11000 // Insufficient allowance
         );
+        vm.stopPrank();
+    }
+
+    function testMultiTransferTokenFailsWhitInsufficientTokenAmount() public {
+        vm.startPrank(USER);
+        // Approve sufficient allowance
+        token.approve(address(multiTransfer), 1000);
+        vm.stopPrank();
+
+        address[] memory addresses = new address[](2);
+        addresses[0] = FIRST_RECIEPIENT; // or any other address
+        addresses[1] = SECOND_RECIPIENT;
+
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = 500;
+        amounts[1] = 100;
+        console.log(token.balanceOf(USER));
+        console.log(token.allowance(USER, address(multiTransfer)));
+
+        vm.startPrank(USER);
+        vm.expectRevert(); // Expect a revert
+        multiTransfer.multiTransferToken(
+            address(token),
+            addresses,
+            amounts,
+            400 // Insufficient amount sum
+        );
+        vm.stopPrank();
     }
 
     // Test Token Transfers:
@@ -237,9 +266,9 @@ contract MultiTransferTest is Test {
         // Approve sufficient allowance
         token.approve(address(multiTransfer), 1000);
         vm.stopPrank();
+        console.log(token.balanceOf(USER));
 
         console.log(token.allowance(USER, address(multiTransfer)));
-        console.log(token.balanceOf(USER));
         console.log(token.balanceOf(FIRST_RECIEPIENT));
         console.log(token.balanceOf(SECOND_RECIPIENT));
 
@@ -551,7 +580,7 @@ contract MultiTransferTest is Test {
         assertEq(finalContractBalance, initialContractBalance + sentEther);
     }
 
-    function testFallbackSebdinZeroEther() public {
+    function testFallbackSendingZeroEther() public {
         // Send ether to the contract using the fallback function
         uint256 initialContractBalance = address(multiTransfer).balance;
         uint256 sentEther = 0 ether;

@@ -14,4 +14,10 @@ docs/
 .env
 broadcast/
 lib/
+MultiTransferV2.sol
+MultiTransferV3.sol
+MultiTransferV4.sol
+MultiTransferV2.t.sol
+DeployMultiTransferV2.s.sol
+coverage/
 
