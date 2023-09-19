@@ -20,7 +20,11 @@ contract MultiTransferV1 is Pausable, Ownable {
     error InsufficientTokenAmount();
     error TooManyAddresses();
 
-    event Multisended(uint256 total, address tokenAddress);
+    event Multisended(
+        address indexed _from,
+        uint256 indexed total,
+        address tokenAddress
+    );
     event MultisendTokenAndEther(
         uint256 totalToken,
         address tokenAddress,
@@ -36,6 +40,7 @@ contract MultiTransferV1 is Pausable, Ownable {
         address payable[] calldata _addresses,
         uint256[] calldata _amounts
     ) external payable whenNotPaused returns (bool) {
+        // The function checks if both input arrays have non-zero lengths. If either of them is empty,
         if (_addresses.length <= 0) {
             revert NoAddressesSpecified();
         }
@@ -46,15 +51,19 @@ contract MultiTransferV1 is Pausable, Ownable {
             revert ArrayLengthMismatch();
         }
         uint256 value = msg.value;
-        for (uint256 i = 0; i < _addresses.length; i++) {
+        for (uint256 i = 0; i < _addresses.length; ++i) {
             if (value < _amounts[i]) {
                 revert InsufficientEtherValue();
             }
-            value -= _amounts[i];
             _addresses[i].transfer(_amounts[i]);
+            value -= _amounts[i];
         }
+        emit Multisended(
+            msg.sender,
+            msg.value,
+            0x000000000000000000000000000000000000bEEF
+        );
         return true;
-        // emit Multisended(msg.value, 0x000000000000000000000000000000000000bEEF);
     }
 
     function multiTransferToken(
@@ -78,14 +87,14 @@ contract MultiTransferV1 is Pausable, Ownable {
             revert InsufficientTokenAllowance();
         }
         token.safeTransferFrom(msg.sender, address(this), _amountSum);
-        for (uint256 i = 0; i < _addresses.length; i++) {
+        for (uint256 i = 0; i < _addresses.length; ++i) {
             if (_amountSum < _amounts[i]) {
                 revert InsufficientTokenAmount();
             }
             _amountSum -= _amounts[i];
             token.safeTransfer(_addresses[i], _amounts[i]);
         }
-        // emit Multisended(_amountSum, address(token));
+        emit Multisended(msg.sender, _amountSum, address(token));
     }
 
     function multiTransferTokenEther(
@@ -118,19 +127,19 @@ contract MultiTransferV1 is Pausable, Ownable {
         IERC20 token = IERC20(_token);
 
         token.safeTransferFrom(msg.sender, address(this), _amountSum);
-        for (uint256 i = 0; i < _addresses.length; i++) {
+        for (uint256 i = 0; i < _addresses.length; ++i) {
             _amountSum -= _amounts[i];
             _value -= _amountsEther[i];
 
             token.safeTransfer(_addresses[i], _amounts[i]);
             _addresses[i].transfer(_amountsEther[i]);
         }
-        // emit MultisendTokenAndEther(
-        //     _amountSum,
-        //     address(token),
-        //     msg.value,
-        //     0x000000000000000000000000000000000000bEEF
-        // );
+        emit MultisendTokenAndEther(
+            _amountSum,
+            address(token),
+            msg.value,
+            0x000000000000000000000000000000000000bEEF
+        );
     }
 
     function emergencyStop() external onlyOwner {
