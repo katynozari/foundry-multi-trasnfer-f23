@@ -66,3 +66,7 @@ $ forge --help
 $ anvil --help
 $ cast --help
 ```
+### Coverage Analysis 
+``` shell
+$ forge coverage --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage
+```

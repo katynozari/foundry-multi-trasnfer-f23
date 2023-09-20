@@ -16,8 +16,6 @@ broadcast/
 lib/
 MultiTransferV3.sol
 MultiTransferV4.sol
-MultiTransferV2.t.sol
-DeployMultiTransferV2.s.sol
 Lifetoken.sol
 Lifetoken.flattened.sol
 coverage/

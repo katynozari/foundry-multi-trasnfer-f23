@@ -29,6 +29,8 @@ contract MultiTransferV2 is Pausable, Ownable {
     error InsufficientTokenAmount();
     error TooManyAddresses();
 
+    address private immutable i_owner;
+
     /// @dev events are a way to log and record specific occurrences or activities that happen within a smart contract
 
     event Multisended(
@@ -43,6 +45,10 @@ contract MultiTransferV2 is Pausable, Ownable {
         address eAddress
     );
     event ClaimedTokens(address token, address owner, uint256 balance);
+
+    constructor() {
+        i_owner = msg.sender;
+    }
 
     /**
      * @dev receive is a special function introduced in Solidity version 0.6.0 and later.
@@ -243,6 +249,10 @@ contract MultiTransferV2 is Pausable, Ownable {
     function _transfer(address _to, uint _amount) internal {
         require(_to != address(0), "Invalid recipient address");
         payable(_to).transfer(_amount);
+    }
+
+    function getOwner() public view returns (address) {
+        return i_owner;
     }
 
     function emergencyStop() external onlyOwner {
