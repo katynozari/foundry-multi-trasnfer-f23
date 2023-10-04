@@ -14,9 +14,19 @@ docs/
 .env
 broadcast/
 lib/
+MultiTransferV1.sol
 MultiTransferV3.sol
 MultiTransferV4.sol
-Lifetoken.sol
-Lifetoken.flattened.sol
+DeployMultiTransferV1.s.sol
+LifeToken.sol
+LifeToken.flattened.sol
+CallFunc.sol
+InheritedInternalFunction.sol
+InternalFunctions.sol
+MultiTransferV2Fuzz.t.sol
+MultiTransferV1Test.t.sol
 coverage/
+FuzzTest/
+lcov.info
+echidna.yaml
 

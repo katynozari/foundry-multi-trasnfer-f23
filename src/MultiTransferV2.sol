@@ -4,9 +4,9 @@ pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title 'MultiTransfer'
 /// @author Katy Nozari
@@ -98,7 +98,7 @@ contract MultiTransferV2 is Pausable, Ownable {
                 revert InsufficientEtherValue();
             }
             /// For each valid transfer, it calls the internal function _transfer to send Ether to the recipient address. It also updates the _value variable accordingly.
-            _transfer(_addresses[i], _amounts[i]);
+            _transferEth(_addresses[i], _amounts[i]);
             _value -= _amounts[i];
         }
         /// @dev Inside the multiTransferETH function, when a transaction occurs, we emit the Multisended event with the relevant data.
@@ -145,12 +145,14 @@ contract MultiTransferV2 is Pausable, Ownable {
         }
         /// Transfer _amountSum to address(this) via msg.sender. address(this) distributes each _amount[i] to _addresses[i]
         token.safeTransferFrom(msg.sender, address(this), _amountSum);
+
         for (uint256 i = 0; i < _addresses.length; ++i) {
             if (_amountSum < _amounts[i]) {
                 revert InsufficientTokenAmount();
             }
             /// _amounts[i] of token is transferred to _addresses[i] via address(this), and _amountSum will be updated after each transfer
-            token.safeTransfer(_addresses[i], _amounts[i]);
+            _transferToken(address(token), _addresses[i], _amounts[i]);
+
             _amountSum -= _amounts[i];
         }
         /// @dev Inside the multiTransferToken function, when a transaction occurs, we emit the Multisended event with the relevant data.
@@ -209,8 +211,8 @@ contract MultiTransferV2 is Pausable, Ownable {
         /// For each valid transfer, it calls the internal function _transfer to send Ether and safeTransfer to transfer tokens to the recipient address.
         /// It also updates the _value and _amountSum variable accordingly.
         for (uint256 i = 0; i < _addresses.length; ++i) {
-            _transfer(_addresses[i], _amountsEther[i]);
-            token.safeTransfer(_addresses[i], _amounts[i]);
+            _transferEth(_addresses[i], _amountsEther[i]);
+            _transferToken(address(token), _addresses[i], _amounts[i]);
 
             _value -= _amountsEther[i];
             _amountSum -= _amounts[i];
@@ -227,6 +229,23 @@ contract MultiTransferV2 is Pausable, Ownable {
     }
 
     /**
+    @dev This function is used to pause the operation of the smart contract. 
+    When this function is called by the owner, it invokes the _pause() function of OpenZeppelin's Pausable contract.
+    */
+    function emergencyStop() external onlyOwner {
+        _pause();
+    }
+
+    /**
+    @dev This function is used to unpause the operation of the smart contract. 
+    When this function is called by the owner, it invokes the _unpause() function of OpenZeppelin's Pausable contract.
+    */
+
+    function unPaused() external onlyOwner {
+        _unpause();
+    }
+
+    /**
      * @notice If there exists any ETH or ERC20 token in balance of this contract, owner can withdraw them. Be careful for calculating _value and _amountSum.
      * @dev This function works as withdraw
      * @param _token The token to send
@@ -239,27 +258,31 @@ contract MultiTransferV2 is Pausable, Ownable {
         }
         IERC20 erc20token = IERC20(_token);
         uint256 balance = erc20token.balanceOf(address(this));
-        erc20token.transfer(owner(), balance);
+        _transferToken(address(erc20token), owner(), balance);
 
         /// @dev Inside the claimTokens function, when a transaction occurs, we emit the ClaimedTokens event with the relevant data.
         emit ClaimedTokens(_token, owner(), balance);
     }
 
     /// @notice `_transfer` is used internally to transfer funds safely.
-    function _transfer(address _to, uint _amount) internal {
+    function _transferEth(address _to, uint256 _amount) internal {
         require(_to != address(0), "Invalid recipient address");
-        payable(_to).transfer(_amount);
+        (bool success, ) = _to.call{value: _amount}("");
+        require(success, "Transfer failed");
+        // payable(_to).transfer(_amount);
+    }
+
+    function _transferToken(
+        address _token,
+        address _to,
+        uint256 _amount
+    ) internal {
+        require(_to != address(0), "Invalid recipient address");
+        IERC20 token = IERC20(_token);
+        token.safeTransfer(_to, _amount);
     }
 
     function getOwner() public view returns (address) {
         return i_owner;
-    }
-
-    function emergencyStop() external onlyOwner {
-        _pause();
-    }
-
-    function unPaused() external onlyOwner {
-        _unpause();
     }
 }

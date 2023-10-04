@@ -6,8 +6,12 @@ import {Test, console} from "forge-std/Test.sol";
 import {MultiTransferV2} from "../../src/MultiTransferV2.sol";
 import {DeployMultiTransferV2} from "../../script/DeployMultiTransferV2.s.sol";
 import {MockToken} from "../mocks/MockToken.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract MultiTransferV2Test is Test {
+    using SafeERC20 for IERC20;
+
     MultiTransferV2 multiTransfer;
     address immutable USER = makeAddr("user");
     address immutable FIRST_RECIEPIENT = makeAddr("firstRecipient");
@@ -680,6 +684,13 @@ contract MultiTransferV2Test is Test {
         vm.stopPrank();
     }
 
+    function testClaimedTokenTokenNotOwner() public {
+        vm.expectRevert();
+        vm.startPrank(USER);
+        multiTransfer.claimTokens(address(token));
+        vm.stopPrank();
+    }
+
     function testClaimEth() public {
         vm.deal(address(multiTransfer), STARTING_BALANCE);
         uint256 startingMultiTransferBalance = address(multiTransfer).balance;
@@ -754,7 +765,8 @@ contract MultiTransferV2Test is Test {
     {
         // Transfer some ERC20 tokens to the contract for testing
         uint256 transferAmount = 100;
-        token.transfer(address(multiTransfer), transferAmount);
+        IERC20 erc20token = IERC20(token);
+        erc20token.safeTransfer(address(multiTransfer), transferAmount);
 
         uint256 startingMultiTransferBalance = token.balanceOf(
             address(multiTransfer)
@@ -839,4 +851,15 @@ contract MultiTransferV2Test is Test {
         }(recipients, amounts);
         vm.stopPrank();
     }
+
+    // function testTranferToken() public {
+    //     address _to = address(0);
+    //     uint256 _amount = 0.1 ether;
+    //     IERC20 erc20token = IERC20(token);
+    //     vm.expectRevert(); // hey, the next line should revet/fail
+    //     // assert (this tx fails/reverts)
+    //     vm.startPrank(USER);
+    //     multiTransfer._transferToken(address(erc20token), _to, _amount);
+    //     vm.stopPrank();
+    // }
 }
