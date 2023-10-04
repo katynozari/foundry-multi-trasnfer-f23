@@ -1,7 +1,8 @@
 ## MultiTransfer
 
 - **About**: With this smart contract you can transfer ETH or ERC20 tokens to multiple addresses. Also you can send ETH and ERC20 tokens to
-multiple addresses at the same time, in one transaction. All codes are written in solidity, thanks to Foundry. UnitTests are added. Coverage is used for unitTests and Slither for checking security and vulnerabilities
+multiple addresses at the same time, in one transaction. All codes are written in solidity, thanks to Foundry. UnitTests are added. Coverage is used for unitTests and Slither for checking security and vulnerabilities.
+MultiTransferV1 has been improved according to these tools and final code is MultiTransferV2. 
 
 Foundry consists of:
 
